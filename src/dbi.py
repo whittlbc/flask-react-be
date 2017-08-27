@@ -58,34 +58,6 @@ def find_all(model, params=None, session=None, unscoped=False):
   return query.all()
 
 
-def find_or_initialize_by(model, find_by_params=None, update_params=None, session=None, unscoped=False):
-  """
-  Find record for a model if it exists, and if not, create it.
-
-  :param model:           (required) model class to query (check models.py)
-  :param find_by_params:  (optional) dict of params to find unique model by
-  :param update_params:   (optional) dict of params to update the model with (non-find-by params...not unique)
-  :param session:         (optional) database session (if not provided, will be created)
-  :param unscoped:        (optional) whether to gather ALL query results, regardless of model's is_destroyed status
-
-  :return: (tuple) -- (model instance, if the record was just created or not)
-  """
-
-  find_by_params, session = ensure_args(find_by_params, session)
-  record = find_one(model, find_by_params.copy(), session, unscoped)
-  update_params = update_params or {}
-
-  if not record:
-    is_new = True
-    find_by_params.update(update_params)  # merge the 2 dicts
-    record = create(model, find_by_params, session)
-  else:
-    is_new = False
-    record = update(record, update_params, session)
-
-  return record, is_new
-
-
 def update(model_instance, params=None, session=None):
   """
   Find record for a model if it exists, and if not, create it.
