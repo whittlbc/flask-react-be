@@ -1,7 +1,7 @@
 """
-Database Interface
+Postgres Database Interface With Soft-Destroyable Models
 """
-from src import db, logger
+from src import db
 
 IS_DESTROYED = 'is_destroyed'  # column used for soft-destroying models
 
