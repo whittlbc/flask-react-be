@@ -1,4 +1,5 @@
 import logging
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from src.helpers.definitions import configs_dir
@@ -16,6 +17,6 @@ db = SQLAlchemy(app)
 from src.routes import api
 api.init_app(app)
 
-if is_prod():
+if is_prod() and os.environ.get('REQUIRE_SSL') == 'true':
   from flask_sslify import SSLify
   SSLify(app)
