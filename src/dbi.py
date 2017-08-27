@@ -1,43 +1,61 @@
 """
-Postgres Database Interface With Soft-Destroyable Models
+Postgres Database Interface providing the following helper methods:
+
+  find_one
+  find_all
+  update
+  create
+  destroy
+  undestroy
+  delete
+
+  * Destroy-ing is the same as "soft" deleting a record...it will simply set the is_destroyed column to True
+  for a record. The helper methods used for querying the DB are automatically scoped to include is_destroyed=False
+  for a given query. One can simply pass in unscoped=True to these query helper methods to find ALL records for a model,
+  regardless of is_destroyed status. NOTE: If a table does NOT have an is_destroyed column on it, calling destroy
+  is the same as calling delete, and the record will be completely removed from the database.
+  
+Usage Examples:
+
+  user = dbi.create(User, {'email': 'my_email@email.com'})
+
+  dbi.update(user, {'email': 'my_updated_email@email.com'})
+
+  dbi.destroy(user)
+
 """
 from src import db
 
-IS_DESTROYED = 'is_destroyed'  # column used for soft-destroying models
+# Column used for soft-deleting models
+IS_DESTROYED = 'is_destroyed'
 
 
-def find_one(model, params=None, session=None, unscoped=False):
+def find_one(model, params={}, unscoped=False):
   """
   Find the first record of a database model per specified query params
 
   :param model:    (required) model class to query (check models.py)
   :param params:   (optional) dict of params to query model with
-  :param session:  (optional) database session (if not provided, will be created)
   :param unscoped: (optional) whether to gather ALL query results, regardless of model's is_destroyed status
 
   :return: first model instance returned from DB query
   """
-  params, session = ensure_args(params, session)
-
   if hasattr(model, IS_DESTROYED) and not params.get(IS_DESTROYED) and not unscoped:
     params[IS_DESTROYED] = False
 
-  return session.query(model).filter_by(**params).first()
+  return db.session.query(model).filter_by(**params).first()
 
 
-def find_all(model, params=None, session=None, unscoped=False):
+def find_all(model, params={}, unscoped=False):
   """
   Find ALL records of a database model per specified query params
 
   :param model:    (required) model class to query (check models.py)
   :param params:   (optional) dict of params to query model with
-  :param session:  (optional) database session (if not provided, will be created)
   :param unscoped: (optional) whether to gather ALL query results, regardless of model's is_destroyed status
 
   :return: list of model instances
   """
-
-  params, session = ensure_args(params, session)
   exact_params = {}
   list_params = {}
 
@@ -50,7 +68,7 @@ def find_all(model, params=None, session=None, unscoped=False):
   if hasattr(model, IS_DESTROYED) and not exact_params.get(IS_DESTROYED) and not unscoped:
     exact_params[IS_DESTROYED] = False
 
-  query = session.query(model).filter_by(**exact_params)
+  query = db.session.query(model).filter_by(**exact_params)
 
   for k, v in list_params.items():
     query = query.filter(getattr(model, k).in_(v))
@@ -58,191 +76,82 @@ def find_all(model, params=None, session=None, unscoped=False):
   return query.all()
 
 
-def update(model_instance, params=None, session=None):
+def update(model_instance, params={}):
   """
-  Find record for a model if it exists, and if not, create it.
+  Update a model instance with new params
 
   :param model_instance:    (required) model instance to update
   :param params:            (optional) dict of params to update model with
-  :param session:           (optional) database session (if not provided, will be created)
 
   :return: the updated model instance
   """
-  params, session = ensure_args(params, session)
-
-  try:
-    [setattr(model_instance, k, v) for k, v in params.items()]
-    session.commit()
-  except Exception as e:
-    raise Exception(
-      'Error updating {} with params: {} with error: {}'.format(type(model_instance).__name__, params, e.message))
+  [setattr(model_instance, k, v) for k, v in params.items()]
+  db.session.commit()
 
   return model_instance
 
 
-def create(model, params=None, session=None):
+def create(model, params={}):
   """
   Create a model and save a new record for specified model class and params
 
   :param model:     (required) model class to create new record for
   :param params:    (model-dependent) dict of params to create model with
-  :param session:   (optional) database session (if not provided, will be created)
 
   :return: the created model instance
   """
-  params, session = ensure_args(params, session)
   model_instance = model(**params)
 
-  try:
-    session.add(model_instance)
-    session.commit()
-  except Exception as e:
-    raise Exception('Error creating {} with params: {} with error: {}'.format(model, params, e.message))
+  db.session.add(model_instance)
+  db.session.commit()
 
   return model_instance
 
 
-def destroy(model, params=None, session=None):
+def destroy(model_instance):
   """
-  Soft-Destroy a model by certain query params
+  "Soft" delete a model instance (if allowed); otherwise, hard delete it.
 
-  :param model:    (required) model class to soft-destroy
-  :param params:   (optional) params to find model instance with
-  :param session:  (optional) database session (if not provided, will be created)
+  :param model_instance:    (required) model instance to soft delete
 
-  :return: (boolean) whether the model instance was successfully soft-destroyed
+  :return: (boolean) whether the model instance was successfully soft deleted
   """
-  if not hasattr(model, IS_DESTROYED):
-    return delete(model, params, session)
-
-  params, session = ensure_args(params, session)
-  result = find_one(model, params, session)
-
-  if result:
-    result.is_destroyed = True
-    session.commit()
-    return True
-
-  return False
-
-
-def destroy_instance(model_instance, session=None):
-  """
-  Soft-Destroy a model instance
-
-  :param model_instance:    (required) model instance to soft-destroy
-  :param session:           (optional) database session (if not provided, will be created)
-
-  :return: (boolean) whether the model instance was successfully soft-destroyed
-  """
-  # if model doesn't have an is_destroyed column, delete the instance instead.
+  # If model is not soft-deletable, hard delete it.
   if not hasattr(model_instance, IS_DESTROYED):
-    return delete_instance(model_instance, session)
+    return delete(model_instance)
 
-  session = session or create_session()
   model_instance.is_destroyed = True
-  session.commit()
+  db.session.commit()
 
   return True
 
 
-def undestroy(model, params=None, session=None):
-  """
-  Undestroy a model by certain query params
-
-  :param model:    (required) model class to undestroy
-  :param params:   (optional) params to find model instance with
-  :param session:  (optional) database session (if not provided, will be created)
-
-  :return: (boolean) whether the model instance was successfully undestroyed
-  """
-  if not hasattr(model, IS_DESTROYED):
-    raise Exception('Can\'t undestroyed a model ({}) without an \'is_destroyed\' column.'.format(model))
-
-  params, session = ensure_args(params, session)
-  result = find_one(model, params, session)
-
-  if result:
-    try:
-      result.is_destroyed = False
-      session.commit()
-    except Exception as e:
-      raise Exception('Error creating {} with params: {} with error: {}'.format(model, params, e.message))
-
-    return True
-  else:
-    return False
-
-
-def undestroy_instance(model_instance, session=None):
+def undestroy(model_instance):
   """
   Undestroy a model instance
 
   :param model:    (required) model instance to undestroy
-  :param session:  (optional) database session (if not provided, will be created)
 
   :return: (boolean) whether the model instance was successfully undestroyed
   """
   if not hasattr(model_instance, IS_DESTROYED):
-    raise Exception(
-      'Can\'t undestroyed a model ({}) without an \'is_destroyed\' column.'.format(type(model_instance).__name__))
-
-  session = session or create_session()
-  model_instance.is_destroyed = False
-  session.commit()
-  return True
-
-
-def delete(model, params=None, session=None):
-  """
-  Delete a model by certain query params
-
-  :param model:    (required) model class to delete
-  :param params:   (optional) params to find model instance with
-  :param session:  (optional) database session (if not provided, will be created)
-
-  :return: (boolean) whether the model instance was successfully deleted
-  """
-  params, session = ensure_args(params, session)
-  result = find_one(model, params, session)
-
-  if result:
-    try:
-      session.delete(result)
-      session.commit()
-    except Exception as e:
-      raise Exception('Error deleting {} with params: {} with error: {}'.format(model, params, e.message))
-
-    return True
-  else:
     return False
 
-
-def delete_instance(model_instance, session=None):
-  """
-  Delete a model by certain query params
-
-  :param model_instance:    (required) model instance to delete
-  :param session:           (optional) database session (if not provided, will be created)
-
-  :return: (boolean) whether the model instance was successfully deleted
-  """
-  session = session or create_session()
-
-  try:
-    session.delete(model_instance)
-    session.commit()
-  except Exception as e:
-    raise Exception('Error deleting {} with error: {}'.format(type(model_instance).__name__, e.message))
+  model_instance.is_destroyed = False
+  db.session.commit()
 
   return True
 
 
-def create_session():
-  return db.session
+def delete(model_instance):
+  """
+  Hard delete a model instance
 
+  :param model_instance:    (required) model instance to hard delete
 
-def ensure_args(params, session):
-  params = params or {}
-  session = session or create_session()
-  return params, session
+  :return: (boolean) whether the model instance was successfully hard deleted
+  """
+  db.session.delete(model_instance)
+  db.session.commit()
+
+  return True
