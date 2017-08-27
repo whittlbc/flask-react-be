@@ -91,10 +91,10 @@ def update(model_instance, params=None, session=None):
   Find record for a model if it exists, and if not, create it.
 
   :param model_instance:    (required) model instance to update
-  :param params:            (optional) dict of params to find update model with
+  :param params:            (optional) dict of params to update model with
   :param session:           (optional) database session (if not provided, will be created)
 
-  :return: the updated model_instance
+  :return: the updated model instance
   """
   params, session = ensure_args(params, session)
 
@@ -109,6 +109,15 @@ def update(model_instance, params=None, session=None):
 
 
 def create(model, params=None, session=None):
+  """
+  Create a model and save a new record for specified model class and params
+
+  :param model:     (required) model class to create new record for
+  :param params:    (model-dependent) dict of params to create model with
+  :param session:   (optional) database session (if not provided, will be created)
+
+  :return: the created model instance
+  """
   params, session = ensure_args(params, session)
   model_instance = model(**params)
 
@@ -122,6 +131,15 @@ def create(model, params=None, session=None):
 
 
 def destroy(model, params=None, session=None):
+  """
+  Soft-Destroy a model by certain query params
+
+  :param model:    (required) model class to soft-destroy
+  :param params:   (optional) params to find model instance with
+  :param session:  (optional) database session (if not provided, will be created)
+
+  :return: (boolean) whether the model instance was successfully soft-destroyed
+  """
   if not hasattr(model, IS_DESTROYED):
     return delete(model, params, session)
 
@@ -137,16 +155,35 @@ def destroy(model, params=None, session=None):
 
 
 def destroy_instance(model_instance, session=None):
+  """
+  Soft-Destroy a model instance
+
+  :param model_instance:    (required) model instance to soft-destroy
+  :param session:           (optional) database session (if not provided, will be created)
+
+  :return: (boolean) whether the model instance was successfully soft-destroyed
+  """
+  # if model doesn't have an is_destroyed column, delete the instance instead.
   if not hasattr(model_instance, IS_DESTROYED):
     return delete_instance(model_instance, session)
 
   session = session or create_session()
   model_instance.is_destroyed = True
   session.commit()
+
   return True
 
 
 def undestroy(model, params=None, session=None):
+  """
+  Undestroy a model by certain query params
+
+  :param model:    (required) model class to undestroy
+  :param params:   (optional) params to find model instance with
+  :param session:  (optional) database session (if not provided, will be created)
+
+  :return: (boolean) whether the model instance was successfully undestroyed
+  """
   if not hasattr(model, IS_DESTROYED):
     raise Exception('Can\'t undestroyed a model ({}) without an \'is_destroyed\' column.'.format(model))
 
@@ -166,6 +203,14 @@ def undestroy(model, params=None, session=None):
 
 
 def undestroy_instance(model_instance, session=None):
+  """
+  Undestroy a model instance
+
+  :param model:    (required) model instance to undestroy
+  :param session:  (optional) database session (if not provided, will be created)
+
+  :return: (boolean) whether the model instance was successfully undestroyed
+  """
   if not hasattr(model_instance, IS_DESTROYED):
     raise Exception(
       'Can\'t undestroyed a model ({}) without an \'is_destroyed\' column.'.format(type(model_instance).__name__))
@@ -177,6 +222,15 @@ def undestroy_instance(model_instance, session=None):
 
 
 def delete(model, params=None, session=None):
+  """
+  Delete a model by certain query params
+
+  :param model:    (required) model class to delete
+  :param params:   (optional) params to find model instance with
+  :param session:  (optional) database session (if not provided, will be created)
+
+  :return: (boolean) whether the model instance was successfully deleted
+  """
   params, session = ensure_args(params, session)
   result = find_one(model, params, session)
 
@@ -193,6 +247,14 @@ def delete(model, params=None, session=None):
 
 
 def delete_instance(model_instance, session=None):
+  """
+  Delete a model by certain query params
+
+  :param model_instance:    (required) model instance to delete
+  :param session:           (optional) database session (if not provided, will be created)
+
+  :return: (boolean) whether the model instance was successfully deleted
+  """
   session = session or create_session()
 
   try:
