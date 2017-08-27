@@ -2,7 +2,6 @@ from flask_restplus import Resource, fields
 from src.models import User
 from src.routes import namespace, api
 from src import dbi
-from src.helpers.status_codes import *
 
 # "model" used to "match" what a requests params will/should look like
 create_user_model = api.model('User', {
