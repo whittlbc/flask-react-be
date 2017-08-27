@@ -208,21 +208,6 @@ def create_session():
   return db.session
 
 
-def commit_session(session, quiet=False):
-  try:
-    session.commit()
-    return True
-  except Exception as e:
-    err_msg = 'Error commiting DB session with error: {}'.format(e.message)
-
-    if quiet:
-      logger.error(err_msg)
-    else:
-      raise Exception(err_msg)
-
-    return False
-
-
 def ensure_args(params, session):
   params = params or {}
   session = session or create_session()
