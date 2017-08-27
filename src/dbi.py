@@ -1,12 +1,22 @@
 """
 Database Interface
 """
-from src import db
+from src import db, logger
 
-IS_DESTROYED = 'is_destroyed'
+IS_DESTROYED = 'is_destroyed'  # column used for soft-destroying models
 
 
 def find_one(model, params=None, session=None, unscoped=False):
+  """
+  Find the first record of a database model per specified query params
+
+  :param model:    (required) model class to query (check models.py)
+  :param params:   (optional) dict of params to query model with
+  :param session:  (optional) database session (if not provided, will be created)
+  :param unscoped: (optional) whether to gather ALL query results, regardless of model's is_destroyed status
+
+  :return: first model instance returned from DB query
+  """
   params, session = ensure_args(params, session)
 
   if hasattr(model, IS_DESTROYED) and not params.get(IS_DESTROYED) and not unscoped:
@@ -16,6 +26,17 @@ def find_one(model, params=None, session=None, unscoped=False):
 
 
 def find_all(model, params=None, session=None, unscoped=False):
+  """
+  Find ALL records of a database model per specified query params
+
+  :param model:    (required) model class to query (check models.py)
+  :param params:   (optional) dict of params to query model with
+  :param session:  (optional) database session (if not provided, will be created)
+  :param unscoped: (optional) whether to gather ALL query results, regardless of model's is_destroyed status
+
+  :return: list of model instances
+  """
+
   params, session = ensure_args(params, session)
   exact_params = {}
   list_params = {}
@@ -38,6 +59,18 @@ def find_all(model, params=None, session=None, unscoped=False):
 
 
 def find_or_initialize_by(model, find_by_params=None, update_params=None, session=None, unscoped=False):
+  """
+  Find record for a model if it exists, and if not, create it.
+
+  :param model:           (required) model class to query (check models.py)
+  :param find_by_params:  (optional) dict of params to find unique model by
+  :param update_params:   (optional) dict of params to update the model with (non-find-by params...not unique)
+  :param session:         (optional) database session (if not provided, will be created)
+  :param unscoped:        (optional) whether to gather ALL query results, regardless of model's is_destroyed status
+
+  :return: (tuple) -- (model instance, if the record was just created or not)
+  """
+
   find_by_params, session = ensure_args(find_by_params, session)
   record = find_one(model, find_by_params.copy(), session, unscoped)
   update_params = update_params or {}
@@ -54,6 +87,15 @@ def find_or_initialize_by(model, find_by_params=None, update_params=None, sessio
 
 
 def update(model_instance, params=None, session=None):
+  """
+  Find record for a model if it exists, and if not, create it.
+
+  :param model_instance:    (required) model instance to update
+  :param params:            (optional) dict of params to find update model with
+  :param session:           (optional) database session (if not provided, will be created)
+
+  :return: the updated model_instance
+  """
   params, session = ensure_args(params, session)
 
   try:
@@ -174,7 +216,7 @@ def commit_session(session, quiet=False):
     err_msg = 'Error commiting DB session with error: {}'.format(e.message)
 
     if quiet:
-      print(err_msg)  # should be logger.error
+      logger.error(err_msg)
     else:
       raise Exception(err_msg)
 
