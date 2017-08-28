@@ -61,7 +61,7 @@ To initialize the database for your project, run the following:
 $ python manage.py db init
 ```
 
-This should create a `migrations/ directory inside the root of your project.
+This should create a `migrations/ directory` inside the root of your project.
 
 Whenever you make changes to your `src/models.py` file, you will want to apply them to your database. Doing this requires 2 steps: generating migration files and applying those migrations to the database. These 2 steps can be done with the following commands, respectively:
 
