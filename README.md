@@ -17,13 +17,13 @@ $ pip install virtualenv
 
 2. Download and install [PostgreSQL](https://www.postgresql.org/download/).
 
-3. Create a new user and new database for this app (substitute your user and db names, accordingly):
+3. Create a new user and new database for this app:
 
 ```
-$ createuser -s myuser
+$ createuser -s flask-react-be
 ```
 ```
-$ createdb -O myuser mydb
+$ createdb -O flask-react-be flask-react-be
 ```
 
 4. Clone this repo:
@@ -36,7 +36,7 @@ $ git clone https://github.com/whittlbc/flask-react-be && cd flask-react-be
 
 ```
 export ENV="dev"
-export DATABASE_URL="<POSTGRESQL_DB_URL"
+export DATABASE_URL="postgresql://flask-react:flask-react@localhost/flask-react?user=flask-react"
 ```
 
 6. Create a new virtual environment and activate it:
