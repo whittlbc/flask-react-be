@@ -48,7 +48,7 @@ $ virtualenv venv && source venv/bin/activate
 7. Install requirements:
 
 ```
-$ pip install -r requirments.txt
+$ pip install -r requirements.txt
 ```
 
 ## Usage
@@ -90,7 +90,7 @@ A `letsencrypt.py` route file is already included to help speed up the certifica
 1. Add `from letsencrypt import *` to the bottom of `src/routes/__init__.py`.
 2. Add `LETSENCRYPT_ROUTE_KEY` and `LETSENCRYPT_RESPONSE_KEY` as environment variables. Their values should be provided to you during the certificate request process.
 
-For more info on setting up SSL, a full description is included on the README of the [front-end part of boilerplate](https://github.com/whittlbc/flask-react-fe#setting-up-ssl-support).
+For more info on setting up SSL, a full description can be found in the [front-end repo for this boilerplate](https://github.com/whittlbc/flask-react-fe#setting-up-ssl-support).
 
 ## License
 
