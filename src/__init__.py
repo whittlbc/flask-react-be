@@ -1,19 +1,28 @@
-import logging
+from logging import StreamHandler, FileHandler, INFO
 import os
+import sys
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from src.helpers.definitions import configs_dir
-from src.helpers.env import env, is_prod
+from src.config import get_config
+from src.helpers.env import is_prod
 
+# Create and configure the Flask app
 app = Flask(__name__)
-app.config.from_pyfile('{}/{}.py'.format(configs_dir, env()))
+app.config.from_object(get_config())
 
-app.logger.addHandler(logging.FileHandler('main.log'))
-app.logger.setLevel(logging.INFO)
+# Set up logging
+if is_prod():
+  app.logger.addHandler(StreamHandler(sys.stdout))
+else:
+  app.logger.addHandler(FileHandler('main.log'))
+
+app.logger.setLevel(INFO)
 logger = app.logger
 
+# Set up Postgres DB
 db = SQLAlchemy(app)
 
+# Set up API routes
 from src.routes import api
 api.init_app(app)
 

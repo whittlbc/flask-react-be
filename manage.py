@@ -23,9 +23,6 @@ from flask_script import Manager
 migrate = Migrate(app, db)
 manager = Manager(app)
 
-# Import all models here to make our schema changes available to Migrate
-from src.models import User
-
 manager.add_command('db', MigrateCommand)
 
 if __name__ == '__main__':
