@@ -1,6 +1,6 @@
 import os
-from flask import make_response
 from flask_restplus import Resource
+from flask import make_response
 from src.routes import api
 
 letsencrypt = api.namespace('.well-known')
