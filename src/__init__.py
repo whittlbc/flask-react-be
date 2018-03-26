@@ -3,12 +3,12 @@ import os
 import sys
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from src.config import get_config
+from src.config import config
 from src.helpers.env import is_prod
 
 # Create and configure the Flask app
 app = Flask(__name__)
-app.config.from_object(get_config())
+app.config.from_object(config)
 
 # Set up logging
 if is_prod():

@@ -18,5 +18,9 @@ def is_dev():
   return ENV == 'dev'
 
 
+def is_staging():
+  return ENV == 'staging'
+
+
 def is_prod():
   return ENV == 'prod'
