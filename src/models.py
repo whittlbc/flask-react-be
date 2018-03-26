@@ -10,7 +10,7 @@ Relationships:
   Session --> belongs_to --> User
 """
 import datetime
-from src import db
+from src import db, dbi
 from src.utils import auth_util
 from uuid import uuid4
 
@@ -29,6 +29,9 @@ class User(db.Model):
     self.uid = uuid4().hex
     self.name = name
     self.hashed_pw = hashed_pw
+
+  def new_session(self):
+    return dbi.create(Session, {'user': self})
 
   def __repr__(self):
     return '<User id={}, uid={}, email={}, name{}, is_destroyed={}, created_at={}>'.format(
